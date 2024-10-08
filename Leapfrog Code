@@ -1,0 +1,253 @@
+using LinearAlgebra
+using Plots
+
+#####################################################
+############## Get direction vectors ################
+
+"""
+This function calculates the position vectors that will be used later to calculate the velocity of Vortex 1. Vortex 1 is the head of the vector (P1) and Vortices 2, 3, and 4 
+(P2, P3, P4 respectively). This then returns the direction vectors.
+
+r21 = The position vector from Vortex 2 to Vortex 1
+r31 = The positionvector from Vortex 3 to Vortex 1
+r41 = The position vector from Vortex 4 to Vortex 1
+
+"""
+function get_r_vor1(positions)
+    P1, P2, P3, P4 = positions
+    r21 = P1 - P2
+    r31 = P1 - P3
+    r41 = P1 - P4
+    return r21, r31, r41
+end
+
+"""
+This function calculates the position vectors from vortices 1, 3, and 4 to Vortex 2. This then returns the direction vectors.
+
+r12 = The position vector from Vortex 1 to Vortex 2
+r32 = The position vector from Vortex 3 to Vortex 2
+r42 = The position vector from Vortex 4 to Vortex 2
+
+"""
+function get_r_vor2(positions)
+    P1, P2, P3, P4 = positions
+    r12 = P2 - P1
+    r32 = P2 - P3
+    r42 = P2 - P4
+    return r12, r32, r42
+end
+
+"""
+TThis function calculates the position vectors from vortices 1, 2, and 4 to Vortex 3. This then returns the direction vectors.
+
+r13 = The position vector from Vortex 1 to Vortex 3
+r23 = The position vector from Vortex 2 to Vortex 3
+r43 = The position vector from Vortex 4 to Vortex 3
+
+"""
+function get_r_vor3(positions)
+    P1, P2, P3, P4 = positions
+    r13 = P3 - P1
+    r23 = P3 - P2
+    r43 = P3 - P4
+    return r13, r23, r43
+end
+
+"""
+This function calculates the position vectors from vortices 1, 2, and 3 to Vortex 4. This then returns the direction vectors.
+
+r14 = The position vector from Vortex 1 to Vortex 4
+r24 = The position vector from Vortex 2 to Vortex 4
+r34 = The position vector from Vortex 3 to Vortex 4
+
+"""
+function get_r_vor4(positions)
+    P1, P2, P3, P4 = positions
+    r14 = P4 - P1
+    r24 = P4 - P2
+    r34 = P4 - P3
+    return r14, r24, r34
+end
+
+############## Get velocity vectors #################
+
+"""
+This function first calculates the influence that the surrounding vortices have on the vortex of interest. After each influence in calculated, vector
+addition is used to obtain the final velocity vector of the vortex of interest. This function is performed 4 times, 1 time for each of the vortices.
+
+Ix_y = The induced velocity that vortex x exherts on vortex y
+Γ1 = The strength of a vortex rotating in the counter-clockwise direction
+Γ2 = The strength of a vortex rotating in the clockwise direction
+Vx = Velocity vector of the vortex of interest
+
+"""
+function get_v_vor1(Γ1, Γ2, positions)
+    r21, r31, r41 = get_r_vor1(positions)
+    I2_1 = cross(Γ1, r21) / (2*π*(norm(r21)^2))
+    I3_1 = cross(Γ1, r31) / (2*π*(norm(r31)^2))
+    I4_1 = cross(Γ2, r41) / (2*π*(norm(r41)^2))
+    V1 = I2_1 + I3_1 + I4_1
+    return V1
+end
+
+"""
+This function first calculates the influence that the surrounding vortices have on the vortex of interest. After each influence in calculated, vector
+addition is used to obtain the final velocity vector of the vortex of interest. This function is performed 4 times, 1 time for each of the vortices.
+
+Ix_y = The induced velocity that vortex x exherts on vortex y
+Γ1 = The strength of a vortex rotating in the counter-clockwise direction
+Γ2 = The strength of a vortex rotating in the clockwise direction
+Vx = Velocity vector of the vortex of interest
+
+"""
+function get_v_vor2(Γ1, Γ2, positions)
+    r12, r32, r42 = get_r_vor2(positions)
+    I1_2 = cross(Γ2, r12) / (2*π*(norm(r12)^2))
+    I3_2 = cross(Γ1, r32) / (2*π*(norm(r32)^2))
+    I4_2 = cross(Γ2, r42) / (2*π*(norm(r42)^2))
+    V2 = I1_2 + I3_2 + I4_2
+    return V2
+end
+
+"""
+This function first calculates the influence that the surrounding vortices have on the vortex of interest. After each influence in calculated, vector
+addition is used to obtain the final velocity vector of the vortex of interest. This function is performed 4 times, 1 time for each of the vortices.
+
+Ix_y = The induced velocity that vortex x exherts on vortex y
+Γ1 = The strength of a vortex rotating in the counter-clockwise direction
+Γ2 = The strength of a vortex rotating in the clockwise direction
+Vx = Velocity vector of the vortex of interest
+
+"""
+function get_v_vor3(Γ1, Γ2, positions)
+    r13, r23, r43 = get_r_vor3(positions)
+    I1_3 = cross(Γ2, r13) / (2*π*(norm(r13)^2))
+    I2_3 = cross(Γ1, r23) / (2*π*(norm(r23)^2))
+    I4_3 = cross(Γ2, r43) / (2*π*(norm(r43)^2))
+    V3 = I1_3 + I2_3 + I4_3
+    return V3
+end
+
+"""
+This function first calculates the influence that the surrounding vortices have on the vortex of interest. After each influence in calculated, vector
+addition is used to obtain the final velocity vector of the vortex of interest. This function is performed 4 times, 1 time for each of the vortices.
+
+Ix_y = The induced velocity that vortex x exherts on vortex y
+Γ1 = The strength of a vortex rotating in the counter-clockwise direction
+Γ2 = The strength of a vortex rotating in the clockwise direction
+Vx = Velocity vector of the vortex of interest
+
+"""
+function get_v_vor4(Γ1, Γ2, positions)
+    r14, r24, r34 = get_r_vor4(positions)
+    I1_4 = cross(Γ2, r14) / (2*π*(norm(r14)^2))
+    I2_4 = cross(Γ1, r24) / (2*π*(norm(r24)^2))
+    I3_4 = cross(Γ1, r34) / (2*π*(norm(r34)^2))
+    V4 = I1_4 + I2_4 + I3_4
+    return V4
+end
+
+######### Calculate new positions after t ###########
+
+"""
+This function uses the previously calculated velocity for vortices 1-4 and the current position of the vortices to calculate the new position after
+0.01 seconds have passed.
+
+"""
+function get_new_p(V1, V2, V3, V4, P1, P2, P3, P4)
+    P1 = P1 + (V1 * 0.01)
+    P2 = P2 + (V2 * 0.01)
+    P3 = P3 + (V3 * 0.01)
+    P4 = P4 + (V4 * 0.01)
+    return P1, P2, P3, P4
+end
+
+########## Plot each of the vortex paths ############
+
+"""
+Using the PLog, this function individually graphs the paths of each vortex and stacks them on top of one another.
+
+"""
+function plot_paths(Plog)
+    plot(PLog[:, 1], PLog[:, 2],        # Plot the path that vortex 1 takes and define all of the parameters of the plot.
+        grid = false,
+        label = nothing,
+        yticks = (-2:2:2),
+        size=(750, 150),
+        color = :blue,
+        ylim = (-1, 1)
+    )
+
+    plot!(PLog[:, 3], PLog[:, 4],       # Plot the path that vortex 2 takes.
+        label = nothing,
+        color = :blue
+    )
+
+    plot!(PLog[:, 5], PLog[:, 6],       # Plot the path that vortex 3 takes.
+        label = nothing,
+        color = :orange
+    )
+
+    plot!(PLog[:, 7], PLog[:, 8],       # Plot the path that vortex 4 takes.
+        label = nothing,
+        color = :orange
+    )
+end
+
+################ Log positions ###################
+
+"""
+This function adds the positions for each of the vortices to a 4000x8 matrix for plotting. See PLog for additional
+information on the columns of this matrix.
+
+"""
+function LogPositions(P1, P2, P3, P4, i)
+    PLog[i,1] = P1[1]       # Log each of the new positions in their appropriate columns of the matrix.
+    PLog[i,2] = P1[2]
+    PLog[i,3] = P2[1]
+    PLog[i,4] = P2[2]
+    PLog[i,5] = P3[1]
+    PLog[i,6] = P3[2]
+    PLog[i,7] = P4[1]
+    PLog[i,8] = P4[2]
+end
+
+############### End of functions ################
+#################################################
+
+"""
+A log of all of positions over 4000 time steps.
+Column 1: P1 x positions
+Column 2: P1 y positions
+Column 3: P2 x positions
+Column 4: P2 y positions
+Column 5: P3 x positions
+Column 6: P3 y positions
+Column 7: P4 x positions
+Column 8: P4 y positions
+
+"""
+PLog = zeros(Float16, 4000, 8)
+
+Γ1 = Int16[0, 0, 1]      # Strength of a counter-clockwise vortex.
+Γ2 = Int16[0, 0, -1]     # Strength of a clockwise vortex.
+
+P1 = Float16[0.0, -0.5, 0]     # Starting positions of each vortex.
+P2 = Float16[0.0, 0.5, 0]
+P3 = Float16[1.0, 0.5, 0]
+P4 = Float16[1.0, -0.5, 0]
+positions = [P1, P2, P3, P4]        # Compile starting positions for first iteration of calculations.
+
+LogPositions(P1, P2, P3, P4, 1)     # Log the starting positions
+
+for i in 2:1:4000
+    V1 = get_v_vor1(Γ1, Γ2, positions)      # Calculate the velocity vectors for each of the vortices.
+    V2 = get_v_vor2(Γ1, Γ2, positions)
+    V3 = get_v_vor3(Γ1, Γ2, positions)
+    V4 = get_v_vor4(Γ1, Γ2, positions)
+    P1, P2, P3, P4 = get_new_p(V1, V2, V3, V4, P1, P2, P3, P4)  
+    LogPositions(P1, P2, P3, P4, i)    # Using the velocity vectors, calculate the new positions of each vortex.
+    positions = [P1, P2, P3, P4]       # Re-define the new positions after each iteration, because the velocity changes and position changes.
+end
+
+plot_paths(PLog)
