@@ -1,0 +1,168 @@
+# Vortex Leapfrog - Redo by request of Dr. Ning
+# FLOW Lab LTRAD Program
+# Author: McKay Hoffmann
+# Date: 10-15-2024
+
+using LinearAlgebra
+using Plots
+
+############## Get direction vectors ################
+# Description of get_position
+    """
+        get_position(positions)
+
+    Take the current positions of all vortices, compute position vectors from each vortex to the specific vortex of interest,
+    and repeat for all vortices. Return r_vectors.
+
+    rxy = The distance from vortex y to vortex x.
+
+    # Examples
+    ```jldoctest
+    julia> r_vectors
+    4×4 Matrix{Vector{Float64}}:
+    [0]    [r12]  [r13]  [r14]
+    [r21]   [0]   [r23]  [r24]
+    [r31]  [r32]   [0]   [r34]
+    [r41]  [r42]  [r43]   [0]
+
+    julia> positions
+    4-element Vector{Vector{Float64}}:
+    [0.0, -0.5, 0.0]
+    [0.0, 0.5, 0.0]
+    [1.0, 0.5, 0.0]
+    [1.0, -0.5, 0.0]
+
+    julia> r_vectors[1, 2]     
+    3-element Vector{Float64}:
+    [0.0, -1.0, 0.0]
+    ```
+
+    See also `get_velocity`.
+    """
+function get_position(positions)
+    r_vectors = fill(Vector{Float64}(), 4, 4)
+    for i in eachindex(positions)
+        for j in eachindex(positions)
+            if i != j
+                r = positions[i] - positions[j]     # Head - tail
+                r_vectors[j, i] = r
+            end
+        end
+    end
+    return r_vectors
+end
+
+############## Get velocity vectors #################
+# Description of get_velocity
+    """
+        get_velocity(positions; ccv, cv)
+
+    Compute the induced velocity that each vortex forces upon another vortex. Sum the induced velocities using vector addition
+    for the final velocity of each vortex. Return all final velocities as vs.
+
+    The purpose of the if statements is to avoid calculating the induced velocity that a vortex would have on itself, which would be 0.
+    The if statements also differentiate between clockwise and counter-clockwise vortices.
+
+    # Arguements
+    - `positions`: current positions calculated in `get_position`
+    - `ccv`: the strength of a counter-clockwise vortex (vortices 2 and 3 are counter-clockwise).
+    - `cv`: the strength of a clockwise vortex (vortices 1 and 4 are clockwise).
+
+    # Examples
+    ```jldoctest
+    julia> vs
+    4-element Vector{Vector{Float64}}:
+    [0.239, 0.0796, 0.0]
+    [0.239, -0.0796, 0.0]
+    [0.239, 0.0796, 0.0]
+    [0.239, -0.0796, 0.0]
+    ```
+
+    See also `get_position`, `update`.
+    """
+function get_velocity(positions; ccv, cv)
+    vs = [zeros(3) for a in 1:4]
+    rs = get_position(positions)
+    for i in 1:4
+        for j in 1:4
+            if (i != j) && (j == 1 || j == 4)
+                vs[i] += (cross(cv, rs[j, i])) / ((2*π*(norm(rs[j, i])^2)))     # Equation for the influence of a clockwise vortex on another vortex.
+            elseif (i != j) && (j == 2 || j == 3)
+                vs[i] += (cross(ccv, rs[j, i])) / ((2*π*(norm(rs[j, i])^2)))        # Equation for the influence of a counter-clockwise vortex on another vortex
+            end
+        end
+    end
+    return vs
+end
+
+######### Update positions and add to PLog ###########
+# Description of update
+    """
+        update(t, PLog, steps; positions!)
+
+    Calculate the current velocity of all vortices, distance travelled, new position of all vortices (newP), and record the new positions of each vortex in PLog.
+    Repeat `steps` times. Return PLog.
+
+    # Arguements
+    - `t::Float64`: The amount of time that passes between each iteration. t = seconds
+    - `PLog`: A (`steps`) by 8 matrix to record the position of each vortex as time passes. 
+    > Columns 1, 2, 3, and 4 record x-coordinate positions for vortices 1, 2, 3, and 4 respectivley.\n
+    > Columns 5, 6, 7, and 8 record x-coordinate positions for vortices 1, 2, 3, and 4 respectivley.
+    - `steps::Int64`: How many iterations the user desires.
+    - `positions!:` The *starting* positions of all 4 vortices. **New positions** are calculated after *each iteration*.
+
+    # Examples
+    ```jldoctest
+    julia> t
+    0.01
+
+    julia> steps
+    4000
+
+    julia> PLog
+    4000×8 Matrix{Float64}:
+    0.00238732   0.00238732   1.00239   1.00239  -0.499204  0.499204  0.500796  -0.500796
+    0.00477972   0.00477972   1.00477   1.00477  -0.498408  0.498408  0.501592  -0.501592
+    ⋮                                                       ⋮
+    12.0775      12.0775      11.4851   11.4851   -0.735925  0.735925  0.264075  -0.264075
+    12.0785      12.0785      11.4906   11.4906   -0.736871  0.736871  0.263129  -0.263129
+    ```
+
+    See also `get_velocity`, `get_position`, `construct_plots`.
+    """
+function update(t, PLog, steps; positions!)
+    for i in 1:1:steps
+        vs = get_velocity(positions!; ccv = [0, 0, 1], cv = [0, 0, -1])
+        for j in 1:4
+            newP = (vs[j] * t) + positions![j]
+            positions![j] = newP
+            PLog[i, j] = newP[1]
+            PLog[i, (j+4)] = newP[2]
+        end
+    end
+    return PLog
+end
+
+################## Create Plots #####################
+# Description of construct_plots
+    """
+        construct_plots(PLog)
+
+    Using the Plots package, create a plot the path taken by each vortex. Save the plot to the current workspace.
+
+    See also `update`.
+    """
+function construct_plots(PLog)
+    for i in 1:1:4
+        plot!(PLog[:, i], PLog[:, (i+4)], label = nothing, size=(750, 150), ylim = (-1, 1), grid = false, yticks = (-2:2:2))
+    end
+    savefig("McKay's Plot")
+end
+
+#####################################################
+
+t = 0.01
+steps = 4000
+PLog = Matrix{Float64}(undef, steps, 8)         # Initialize a matrix of dimensions `steps` by 8 with undefined values. 
+PLog = update(t, PLog, steps; (positions! = [[0.0, -0.5, 0], [0, 0.5, 0], [1.0, 0.5, 0], [1, -0.5, 0]]))
+construct_plots(PLog)
